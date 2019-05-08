@@ -38,11 +38,11 @@ if __name__ == '__main__':
     motion.wakeUp() # Wakes up the robot
     posture.goToPosture("Stand", .7) # Commands the robot to stand up
     # Print the default joint angle values of the robot
-    print "Hip Angle: " + str(deg(motion.getAngles("RHipPitch", True)[0]))
-    print "Knee Angle: " + str(deg(motion.getAngles("LKneePitch", True)[0]))
-    print "Shoulder Angle: " + str(deg(motion.getAngles("RShoulderPitch", True)[0]))
-    print "Ankle Angle: " + str(deg(motion.getAngles("RAnklePitch", True)[0]))
-    print "Elbow Angle: " + str(deg(motion.getAngles("RElbowRoll", True)[0]))
+    print "Hip Angle: " + str(degree(motion.getAngles("RHipPitch", True)[0]))
+    print "Knee Angle: " + str(degree(motion.getAngles("LKneePitch", True)[0]))
+    print "Shoulder Angle: " + str(degree(motion.getAngles("RShoulderPitch", True)[0]))
+    print "Ankle Angle: " + str(degree(motion.getAngles("RAnklePitch", True)[0]))
+    print "Elbow Angle: " + str(degree(motion.getAngles("RElbowRoll", True)[0]))
     time.sleep(3)
     motion.openHand("RHand") # Commands the robot to open its hand
     motion.angleInterpolation(nameList, angleList, timeList, True) # Has the effect of telling the robot to reachdown for something
