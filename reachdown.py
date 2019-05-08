@@ -44,8 +44,7 @@ if __name__ == '__main__':
     print "Ankle Angle: " + str(deg(motion.getAngles("RAnklePitch", True)[0]))
     print "Elbow Angle: " + str(deg(motion.getAngles("RElbowRoll", True)[0]))
     time.sleep(3)
-    motion.openHand("RHand")
-    motion.angleInterpolation(nameList, angleList, timeList, True)
-    print "Closing Hand!!"
-    motion.closeHand("RHand")
+    motion.openHand("RHand") # Commands the robot to open its hand
+    motion.angleInterpolation(nameList, angleList, timeList, True) # Has the effect of telling the robot to reachdown for something
+    motion.closeHand("RHand") # Commands the robot to grab the object by closing its hand
 
