@@ -64,7 +64,7 @@ if __name__ == '__main__':
         IP = sys.argv[1]
 
     camProxy = ALProxy('ALVideoDevice', IP, PORT)
-    resolution = 2  #VGA
+    resolution = 1  #VGA
     colorspace = 11 #RGB
     fps = 30
 
