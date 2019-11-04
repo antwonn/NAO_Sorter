@@ -6,11 +6,12 @@ import numpy as np
 
 class Server:
 
-    host = '192.168.0.104'
+    host = None 
     port = 9000
     buffsize = 4096
 
-    def __init__(self):
+    def __init__(self, host):
+        self.host = host
         self.net = Detector(bytes("cfg/yolov3.cfg", encoding="utf-8"), bytes("weights/yolov3.backup", encoding="utf-8"), 0,
                    bytes("data/pong.data", encoding="utf-8"))
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 

@@ -9,11 +9,12 @@ Create a function that sends numpy image through a socket.
 '''
 
 class Client:
-    host = '127.0.0.1'
+    host = None
     port = 9000
     buffsize = 4096
 
-    def __init__(self):
+    def __init__(self, host):
+        self.host = host
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
         self.socket.recv(self.buffsize)
