@@ -1,0 +1,58 @@
+
+class PID:
+	"""
+	PID controller: 
+		P - Proportional
+		I - Integral
+		D - Derivative
+	"""
+	def __init__(self, P=0.1, I=0.2, setpoint=500, Xpos=100, Intergrator=0):
+		self.Kp = P
+		self.Ki = I
+		self.I = Intergrator
+		self.Sp = setpoint
+		self.Pv = Xpos          #process variable=current Xpos position of robot
+		self.error = 0.0
+		self.Mv = 0             #MV:manipulated variable is the input to the process
+		
+	def update(self, Xpos):
+		"""
+		Calculate PID output value for Plant/Process system's input
+		"""
+		self.Pv = Xpos
+		self.error = self.Sp - self.Pv
+		self.I = self.I + self.error          #error(Kt=Ki)
+
+	def setSp(self,set_point):
+		self.Sp = set_point
+		
+	def setPv(self, Xpos):
+		self.Pv = Xpos
+		
+	def setKp(self,P):
+		self.Kp=P
+
+	def setKi(self,I):
+		self.Ki=I
+		
+	def setI(self, Integrator):
+		self.I = Integrator
+	
+	def getSp(self):
+		return self.Sp
+		
+	def getPv(self):
+		return self.Pv
+
+	def getError(self):
+		return self.error
+
+	def getI(self):
+		return self.I
+		
+	def getMv(self, Xpos):
+		pid = update(Xpos)				#update all value before return Manioulated variable
+		self.Mv = self.error + self.I   #error(Kp)
+		return self.Mv
+		
+	
