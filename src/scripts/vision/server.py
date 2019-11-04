@@ -23,11 +23,11 @@ class Server:
 
     def handleRequests(self):
         client = self.client
+        net = self.net
         while True:
             recv = client.recv(self.buffsize)
             while len(recv) % self.buffsize == 0:
                 recv += client.recv(self.buffsize)
-            print('recv : ' + str(recv))
             frame = pickle.loads(recv)
             dark_frame = Image(frame)
             results = net.detect(dark_frame)
