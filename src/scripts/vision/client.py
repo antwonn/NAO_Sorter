@@ -21,12 +21,12 @@ class Client:
 
     def detect(self, np_image):
         data = pickle.dumps(np_image) # Binary data
-        self.socket.send(data) # Send Binary Data
+        self.socket.send(data, protocol=2) # Send Binary Data
         print('sent: ' + str(len(data)) + ' bytes')
         recv = self.socket.recv(self.buffsize) # Receive Detected Object
         while len(recv) % self.buffsize == 0:
             recv += self.socket.recv(self.buffsize)
-        return pickle.loads(recv) # Return Detected Object
+        return pickle.loads(recv, protocol=2) # Return Detected Object
 
 
 

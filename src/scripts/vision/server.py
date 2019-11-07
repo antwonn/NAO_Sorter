@@ -28,7 +28,7 @@ class Server:
             recv = client.recv(self.buffsize)
             while len(recv) % self.buffsize == 0:
                 recv += client.recv(self.buffsize)
-            frame = pickle.loads(recv)
+            frame = pickle.loads(recv, protocol=2)
             dark_frame = Image(frame)
             results = net.detect(dark_frame)
             del dark_frame
@@ -45,7 +45,7 @@ class Server:
                 obj.append(h)
                 data.append(obj) 
             
-            ret = pickle.dumps(data)
+            ret = pickle.dumps(data, protocol=2)
             print('sending data')
             client.send(ret)
 
