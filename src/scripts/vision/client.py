@@ -20,13 +20,13 @@ class Client:
         assert self.socket.recv(self.buffsize) == b'INITIALIZED'
 
     def detect(self, np_image):
-        data = pickle.dumps(np_image) # Binary data
-        self.socket.send(data, protocol=2) # Send Binary Data
+        data = pickle.dumps(np_image, protocol=2) # Binary data
+        self.socket.send(data) # Send Binary Data
         print('sent: ' + str(len(data)) + ' bytes')
         recv = self.socket.recv(self.buffsize) # Receive Detected Object
         while len(recv) % self.buffsize == 0:
             recv += self.socket.recv(self.buffsize)
-        return pickle.loads(recv, protocol=2) # Return Detected Object
+        return pickle.loads(recv) # Return Detected Object
 
 
 
