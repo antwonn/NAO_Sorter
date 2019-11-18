@@ -11,8 +11,8 @@ TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST MOVE_TOWARD')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
 
-globalState = GLOBAL_STATES.SEARCH
-localState  = PICKUP_STATES.INIT
+globalState = GLOBAL_STATES.PICKUP
+localState  = PICKUP_STATES.BEND_DOWN
 motion      = None
 posture     = None
 
@@ -141,6 +141,7 @@ def trackStart():
 
 def trackEnd():
     global localState
+
     if localState == TRACK_STATES.INIT:
         print localState
     elif localState == TRACK_STATES.ADJUST:

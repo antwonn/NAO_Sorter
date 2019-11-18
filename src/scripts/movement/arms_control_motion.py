@@ -8,15 +8,15 @@ import sys
 
 class RightHandControl:
 	#Initialize the angle variable for armjoints
-	def _init_(self, angleList, IP="127.0.0.1", port=9559):
+	def __init__(self, angleList, IP="127.0.0.1", port=9559):
 		motion = ALProxy("ALMotion", IP, port)
 		posture= ALProxy("ALRobotPosture", IP, port)
-		self.RHandAngle = degree(motion.getAngles(angleList[0], True)[0])
-		self.RWristYawAngle = degree(motion.getAngles(angleList[1], True)[0])
-		self.RElbowRollAngle = degree(motion.getAngles(angleList[2], True)[0])
-		self.RElbowYawAngle = degree(motion.getAngles(angleList[3], True)[0])
-		self.RShoulderRollAngle = degree(motion.getAngles(angleList[4], True)[0])
-		self.RShoulderPitchAngle = degree(motion.getAngles(angleList[5], True)[0])
+		self.RHandAngle = degrees(motion.getAngles(angleList[0], True)[0])
+		self.RWristYawAngle = degrees(motion.getAngles(angleList[1], True)[0])
+		self.RElbowRollAngle = degrees(motion.getAngles(angleList[2], True)[0])
+		self.RElbowYawAngle = degrees(motion.getAngles(angleList[3], True)[0])
+		self.RShoulderRollAngle = degrees(motion.getAngles(angleList[4], True)[0])
+		self.RShoulderPitchAngle = degrees(motion.getAngles(angleList[5], True)[0])
 		
 		self.RHandTime = 0
 		self.RWristYawTime = 0
@@ -62,9 +62,9 @@ if __name__ == '__main__':
 	
 	angleList = []
 	for name in nameList:
-		angleList.append(degree(motion.getAngles(name, True)[0]))
+		angleList.append(degrees(motion.getAngles(name, True)[0]))
 	print("angleList: ", angleList)
 	
-	go = RightHandControl(IP, port)
+	go = RightHandControl(angleList, IP, port)
 	go.moveRHand(nameList, angleList, timeList)
 	print("-------------DONE-------------")
