@@ -53,6 +53,7 @@ def stateMachineStart():
         print globalState
     elif globalState == GLOBAL_STATES.SEARCH:
         #TODO: SEARCH STATE
+        searchStart()
         print globalState
     elif globalState == GLOBAL_STATES.TRACK:
         #TODO: TRACK STATE
@@ -79,6 +80,7 @@ def stateMachineEnd():
         print globalState
     elif globalState == GLOBAL_STATES.SEARCH:
         #TODO: SEARCH STATE
+        searchEnd()
         print globalState
     elif globalState == GLOBAL_STATES.TRACK:
         #TODO: TRACH STATE
@@ -98,6 +100,7 @@ def stateMachineEnd():
 def searchStart():
     global localState
     if localState == SEARCH_STATES.INIT:
+        localState = SEARCH_STATES.MOVE
         print localState
     elif localState == SEARCH_STATES.MOVE:
         #MOVE TO OBJECT
@@ -123,6 +126,32 @@ def searchEnd():
         print 'SEARCH STATE END'
 
 
+####################### TRACK #########################
+#TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST MOVE_TOWARD')
+def trackStart():
+    global localState
+    if localState == TRACK_STATES.INIT:
+        print localState
+    elif localState == TRACK_STATES.ADJUST:
+        print localState
+    elif localState == TRACK_STATES.TOWARD:
+        print localState
+    else:
+        print 'TRACK STATE START'
+
+def trackEnd():
+    global localState
+    if localState == TRACK_STATES.INIT:
+        print localState
+    elif localState == TRACK_STATES.ADJUST:
+        print localState
+    elif localState == TRACK_STATES.TOWARD:
+        print localState
+    else:
+        print 'TRACK STATE END'
+
+
+
 ####################### PICK UP #######################
 def pickUpStart():
     global motion
@@ -146,6 +175,8 @@ def pickUpStart():
         print 'IN PICKUP STATE BUT NO LOCAL STATE'
     
 def pickUpEnd():
+    global localState
+
     if localState == PICKUP_STATES.INIT:
         print localState
     elif localState == PICKUP_STATES.ADJUST:
@@ -161,6 +192,41 @@ def pickUpEnd():
         print localState
     else:
         print 'IN PICKUP STATE BUT NO LOCAL STATE'
+
+################ RETURN ##############################
+#RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
+def returnStart():
+    global localState
+
+    if localState == RETURN_STATES.INIT:
+        print localState
+    elif localState == RETURN_STATES.GO_HOME:
+        print localState
+    elif localState == RETURN_STATES.SCAN:
+        print localState
+    elif localState == RETURN_STATES.SEARCH_HOME:
+        print localState
+    elif localState == RETURN_STATES.DROP:
+        print localState
+    else:
+        print 'IN RETURN STATE START'
+
+def returnEnd():
+    global localState
+
+    if localState == RETURN_STATES.INIT:
+        print localState
+    elif localState == RETURN_STATES.GO_HOME:
+        print localState
+    elif localState == RETURN_STATES.SCAN:
+        print localState
+    elif localState == RETURN_STATES.SEARCH_HOME:
+        print localState
+    elif localState == RETURN_STATES.DROP:
+        print localState
+    else:
+        print 'IN RETURN STATE END'
+
 
     
 
