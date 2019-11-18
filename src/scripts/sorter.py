@@ -11,8 +11,8 @@ TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST MOVE_TOWARD')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
 
-globalState = GLOBAL_STATES.PICKUP
-localState  = PICKUP_STATES.BEND_DOWN
+globalState = GLOBAL_STATES.SEARCH
+localState  = PICKUP_STATES.INIT
 motion      = None
 posture     = None
 
@@ -93,9 +93,40 @@ def stateMachineEnd():
     else:
         print 'STATE NOT APPLICABLE'
     
-#######################PICK UP#######################
+####################### SEARCH ########################
+#SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
+def searchStart():
+    global localState
+    if localState == SEARCH_STATES.INIT:
+        print localState
+    elif localState == SEARCH_STATES.MOVE:
+        #MOVE TO OBJECT
+        print localState
+    elif localState == SEARCH_STATES.HEAD_SCAN:
+        #MOVE HEAD
+        print localState
+    else:
+        print 'SEARCH STATE START'
+
+def searchEnd():
+    global localState
+    if localState == SEARCH_STATES.INIT:
+        #START THREAD LOOKING FOR OBJECTS
+        print localState
+    elif localState == SEARCH_STATES.MOVE:
+        #CHECK IF DETECTED
+        #IF YES: CHANGE STATE TO TRACK
+        print localState
+    elif localState == SEARCH_STATES.HEAD_SCAN:
+        print localState
+    else:
+        print 'SEARCH STATE END'
+
+
+####################### PICK UP #######################
 def pickUpStart():
     global motion
+    global localState
 
     if localState == PICKUP_STATES.INIT:
         print localState
@@ -105,6 +136,7 @@ def pickUpStart():
         print localState
         bend_down( motion )     
     elif localState == PICKUP_STATES.PID:
+        #Truc:Adjust right hand to decrease error.
         print localState
     elif localState == PICKUP_STATES.GRAB:
         print localState
@@ -121,6 +153,7 @@ def pickUpEnd():
     elif localState == PICKUP_STATES.BEND_DOWN:
         print localState
     elif localState == PICKUP_STATES.PID:
+        #Truc:Check if error is zero.
         print localState
     elif localState == PICKUP_STATES.GRAB:
         print localState
@@ -128,6 +161,7 @@ def pickUpEnd():
         print localState
     else:
         print 'IN PICKUP STATE BUT NO LOCAL STATE'
+
     
 
 if __name__ == '__main__':
