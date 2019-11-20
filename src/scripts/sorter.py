@@ -131,6 +131,9 @@ def searchEnd():
 def trackStart():
     global localState
     if localState == TRACK_STATES.INIT:
+        #initiate bounding box
+        #initiate thread that is updating the box continuously
+        #if bounding box is null then go back to search
         print localState
     elif localState == TRACK_STATES.ADJUST:
         print localState
