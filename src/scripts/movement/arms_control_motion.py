@@ -8,15 +8,15 @@ import sys
 
 class RightHandControl:
 	#Initialize the angle variable for armjoints
-	def __init__(self, angleList, IP="127.0.0.1", port=9559):
+	def __init__(self, nameList, IP="127.0.0.1", port=9559):
 		motion = ALProxy("ALMotion", IP, port)
 		posture= ALProxy("ALRobotPosture", IP, port)
-		self.RHandAngle = degrees(motion.getAngles(angleList[0], True)[0])
-		self.RWristYawAngle = degrees(motion.getAngles(angleList[1], True)[0])
-		self.RElbowRollAngle = degrees(motion.getAngles(angleList[2], True)[0])
-		self.RElbowYawAngle = degrees(motion.getAngles(angleList[3], True)[0])
-		self.RShoulderRollAngle = degrees(motion.getAngles(angleList[4], True)[0])
-		self.RShoulderPitchAngle = degrees(motion.getAngles(angleList[5], True)[0])
+		self.RHandAngle = degrees(motion.getAngles(nameList[0], True)[0])
+		self.RWristYawAngle = degrees(motion.getAngles(nameList[1], True)[0])
+		self.RElbowRollAngle = degrees(motion.getAngles(nameList[2], True)[0])
+		self.RElbowYawAngle = degrees(motion.getAngles(nameList[3], True)[0])
+		self.RShoulderRollAngle = degrees(motion.getAngles(nameList[4], True)[0])
+		self.RShoulderPitchAngle = degrees(motion.getAngles(nameList[5], True)[0])
 		
 		self.RHandTime = 0
 		self.RWristYawTime = 0
