@@ -4,6 +4,7 @@ from enum import Enum
 from movement.movement import Movement
 from movement.pick_up_position import bend_down
 import argparse
+from vision import client as cl
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
 SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
@@ -13,15 +14,24 @@ RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
 
 globalState = GLOBAL_STATES.PICKUP
 localState  = PICKUP_STATES.BEND_DOWN
+client      = None
 motion      = None
 posture     = None
+camera      = None
+videoClient = None
 
+def findObjects():
+    image = camera.getImageRemote(videoClient)
+    width, height, np_str = image[0], image[1], image[6]
+    image = np.fromstring(np_str, np.uint8).reshape(height, width, 3)
+    return client.detect(image)
 
 def main(ip, port = 9559):
     global globalState
     global localState
     global motion
     global posture
+    global camera
 
     try:
         motion = ALProxy("ALMotion", ip, port)
@@ -35,6 +45,11 @@ def main(ip, port = 9559):
         print "Error connecting to ALRobotPosture"
         print "Error: ", e
 
+    try:
+        camera = ALProxy("ALVideoDevice", ip, port)
+    except Exception, e:
+        print "Error connecting to ALVideoDevice"
+        print "Error: ", e
 
     movement = Movement(ip, port)
     print( globalState )
@@ -86,8 +101,7 @@ def stateMachineEnd():
         #TODO: TRACH STATE
         print globalState
     elif globalState == GLOBAL_STATES.PICKUP:
-        if pickUpEnd() == GLOBAL_STATES.COMPLETED:
-            globalState = GLOBAL_STATES.RETURN
+        if pickUpEnd() == GLOBAL_STATES.COMPLETED: globalState = GLOBAL_STATES.RETURN
             localState  = RETURN_STATES.INIT
     elif globalState == GLOBAL_STATES.RETURN:
         #TODO: RETURN STATE
@@ -98,20 +112,44 @@ def stateMachineEnd():
 ####################### SEARCH ########################
 #SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
 def searchStart():
+    global globalState
     global localState
+    global client
+    global camera
+    global videoClient
+
     if localState == SEARCH_STATES.INIT:
-        localState = SEARCH_STATES.MOVE
-        print localState
+
+        if not client:
+            client = cl.Client(args.ip)
+            camera = ALProxy('ALVideoDevice', args.ip, args.port)
+            videoClient = camera.subscribe('python_GVM', 2, 13, 5)
+            
+        objects = findObjects()
+        if objects:
+            globalState = GLOBAL_STATES.TRACK
+            localState = TRACK_STATES.INIT
+            print globalState
+            print localState
+        else:
+            localState = SEARCH_STATES.HEAD_SCAN
+            
     elif localState == SEARCH_STATES.MOVE:
         #MOVE TO OBJECT
         print localState
+
     elif localState == SEARCH_STATES.HEAD_SCAN:
         #MOVE HEAD
+        # IF STRAIGHT LOOK LEFT
+        # IF LEFT LOOK RIGHT
+        # IF RIGHT LOOK LEFT
         print localState
+
     else:
         print 'SEARCH STATE START'
 
 def searchEnd():
+    global globalState
     global localState
     if localState == SEARCH_STATES.INIT:
         #START THREAD LOOKING FOR OBJECTS
@@ -121,6 +159,10 @@ def searchEnd():
         #IF YES: CHANGE STATE TO TRACK
         print localState
     elif localState == SEARCH_STATES.HEAD_SCAN:
+        objects = findObjects()
+        if objects:
+            globalState = GLOBAL_STATES.TRACK
+            localState = TRACK_STATES.INIT
         print localState
     else:
         print 'SEARCH STATE END'
