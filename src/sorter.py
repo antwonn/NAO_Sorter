@@ -3,6 +3,7 @@ from Queue import Queue
 from enum import Enum
 from movement.movement import Movement
 from movement.pick_up_position import bend_down
+from vision.clientTracker import ClientTracker
 import argparse
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
@@ -11,10 +12,12 @@ TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST MOVE_TOWARD')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
 
-globalState = GLOBAL_STATES.PICKUP
-localState  = PICKUP_STATES.BEND_DOWN
+globalState = GLOBAL_STATES.TRACK
+localState  = TRACK_STATES.INIT
 motion      = None
 posture     = None
+camera      = None
+tracker     = None
 
 
 def main(ip, port = 9559):
@@ -22,6 +25,7 @@ def main(ip, port = 9559):
     global localState
     global motion
     global posture
+    global camera
 
     try:
         motion = ALProxy("ALMotion", ip, port)
@@ -35,6 +39,11 @@ def main(ip, port = 9559):
         print "Error connecting to ALRobotPosture"
         print "Error: ", e
 
+    try:
+        camera  = ALProxy("ALVideoDevice", ip, port)
+    except Exception, e:
+        print "Error connecting to ALVideoDevice"
+        print "Error: ", e
 
     movement = Movement(ip, port)
     print( globalState )
@@ -58,6 +67,7 @@ def stateMachineStart():
     elif globalState == GLOBAL_STATES.TRACK:
         #TODO: TRACK STATE
         print globalState
+        trackStart()
     elif globalState == GLOBAL_STATES.PICKUP:
         #TODO: PICKUP STATE
         print globalState
@@ -67,8 +77,6 @@ def stateMachineStart():
         print globalState
     else:
         print('STATE NOT APPLICABLE')
-
-    globalState = GLOBAL_STATES.SEARCH
     
 
 def stateMachineEnd():
@@ -84,6 +92,9 @@ def stateMachineEnd():
         print globalState
     elif globalState == GLOBAL_STATES.TRACK:
         #TODO: TRACH STATE
+        if trackEnd() == GLOBAL_STATES.COMPLETED:
+            globalState = GLOBAL_STATES.PICKUP
+            localState  = PICKUP_STATES.INIT
         print globalState
     elif globalState == GLOBAL_STATES.PICKUP:
         if pickUpEnd() == GLOBAL_STATES.COMPLETED:
@@ -130,8 +141,10 @@ def searchEnd():
 #TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST MOVE_TOWARD')
 def trackStart():
     global localState
+    global tracker
+    global camera
+
     if localState == TRACK_STATES.INIT:
-        #initiate bounding box
         #initiate thread that is updating the box continuously
         #if bounding box is null then go back to search
         print localState
@@ -144,8 +157,17 @@ def trackStart():
 
 def trackEnd():
     global localState
+    global tracker
+    global camera
 
     if localState == TRACK_STATES.INIT:
+        bounding_box = (50, 50, 50, 50) #initiate bounding box
+        tracker = ClientTracker( '127.0.0.1' )
+        print camera
+        tracker.start( camera, bounding_box )
+        #TODO: get initial adjustent
+        print 'TRACK_STATES.INIT'
+        localState = TRACK_STATES.ADJUST
         print localState
     elif localState == TRACK_STATES.ADJUST:
         print localState

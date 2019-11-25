@@ -30,7 +30,7 @@ class RightHandControl:
 		angleList = [self.RHandAngle, self.RWristYawAngle,self.RElbowRollAngle,\
 					self.RElbowYawAngle,self.RShoulderRollAngle, self.RShoulderPitchAngle]
 		timeList  = [self.RHandTime, self.RWristYawTime, self.RElbowRollTime,\
-					self.RElbowYawTime, self.RShoulderRollTime, delf.RShoulderPitchTime]
+					self.RElbowYawTime, self.RShoulderRollTime, self.RShoulderPitchTime]
 		
 		
 	def moveRHand(nameList, angleList, timeList):
@@ -65,6 +65,6 @@ if __name__ == '__main__':
 		angleList.append(degrees(motion.getAngles(name, True)[0]))
 	print("angleList: ", angleList)
 	
-	go = RightHandControl(angleList, IP, port)
+	go = RightHandControl(nameList, IP, port)
 	go.moveRHand(nameList, angleList, timeList)
 	print("-------------DONE-------------")
