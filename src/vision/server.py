@@ -12,8 +12,9 @@ class Server:
 
     def __init__(self, host):
         self.host = host
-        self.net = Detector(bytes("cfg/yolov3.cfg", encoding="utf-8"), bytes("weights/yolov3.backup", encoding="utf-8"), 0,
-                   bytes("data/pong.data", encoding="utf-8"))
+        self.net = Detector(bytes("training_weights/yolov3.cfg", encoding="utf-8"),
+        bytes("training_weights/yolov3.backup", encoding="utf-8"), 0,
+                   bytes("/home/tony/Desktop/data/pong.data", encoding="utf-8"))
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
         self.socket.bind((self.host, self.port))
         self.socket.listen()
@@ -29,6 +30,7 @@ class Server:
             while len(recv) % self.buffsize == 0:
                 recv += client.recv(self.buffsize)
             frame = pickle.loads(recv, encoding='bytes')
+            print('before')
             dark_frame = Image(frame)
             results = net.detect(dark_frame)
             del dark_frame
