@@ -30,11 +30,13 @@ def main(ip, port = 9559):
     global localState
     global motion
     global posture
+    global tts
     global camera
     global videoClient
 
     try:
         motion = ALProxy("ALMotion", ip, port)
+        motion.wakeUp()
     except Exception, e:
         print "Error connecting to ALMotion"
         print "Error: ", e
@@ -47,7 +49,9 @@ def main(ip, port = 9559):
 
     try:
         camera = ALProxy("ALVideoDevice", ip, port)
-        videoClient = camera.subscribe('python_GVM', 2, 13, 5)
+        for x in camera.getSubscribers():
+            camera.unsubscribe(x)
+        videoClient = camera.subscribe('nao_sorter', 2, 13, 5)
     except Exception, e:
         print "Error connecting to ALVideoDevice"
         print "Error: ", e
@@ -199,6 +203,7 @@ def trackEnd():
     global tracker
     global camera
     global objects
+    global tts
 
     if localState == TRACK_STATES.INIT:
         #SORT THE LIST OF OBJECTS AND PICK ONE
@@ -209,15 +214,18 @@ def trackEnd():
             localState  = SEARCH_STATES.INIT
             return GLOBAL_STATES.INCOMPLETE
 
-        tts.say("Found " + str( len(objects) ) + " objects.")
+        #tts.say("Found " + str( len(objects) ) + " objects.")
+        print objects
         sortedObjects = sortObjects( objects )
+        print sortedObjects
 
         cubes = countObjects( sortedObjects, "cube" )
-        balls = countObjects( sortedObjects, "balls" )
-        tts.say("There are " + str(cubes) + " cubes.")
-        tts.say("There are " + str(balls) + " balls.")
+        balls = countObjects( sortedObjects, "ball" )
+        #tts.say("There are " + str(cubes) + " cubes.")
+        #tts.say("There are " + str(balls) + " balls.")
 
-        box    = sortedObjects[0,2:]
+        box = sortedObjects[0,2:]
+        box = box.astype(float)
         bounding_box = tuple(box) 
         print bounding_box
         
@@ -323,7 +331,8 @@ def findObjects():
 
 def sortObjects( objects ):
     array = np.array( objects )
-    return array[ array[:,3].argsort() ]
+    array = array[ array[:,3].argsort() ]
+    return array[-1:,:]
 
 def countObjects( array, target ):
     return np.count_nonzero( array == target )

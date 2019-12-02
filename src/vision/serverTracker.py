@@ -3,9 +3,10 @@ import socket
 import pickle
 import numpy as np
 
-class serverTracker:
+class ServerTracker:
     port     = 9001
     buffsize = 4096
+    encoding = 'utf-8'
 
 
     def __init__(self, host):
@@ -20,11 +21,10 @@ class serverTracker:
         self.client, _ = self.socket.accept()
 
         self.DISPATCHER = {
-            "start"  : serverTracker.start,
-            "update" : serverTracker.update
+            'start'  : self.start,
+            'update' : self.update
         }
 
-        #self.client.send(b'INITIALIZED')
         self.handleRequests()
 
     def handleRequests(self):
@@ -33,21 +33,22 @@ class serverTracker:
             while len(recv) % self.buffsize == 0:
                 recv += self.client.recv(self.buffsize)
             msg  = pickle.loads( recv, encoding='bytes')
-            print (msg[2])
-            # if start then update bounding box and frame
-            # if update then update frame and return bounding box
+            s = str(msg[0], self.encoding)
+            self.DISPATCHER[s]( msg )
+            #Return Message
 
-
-    def start(self):
+    def start(self, msg):
         self.tracker = cv2.TrackerCSRT_create()
-        self.tracker.init( frame, boundingBox ) 
+        self.tracker.init( msg[1], msg[2] ) 
         print ('started tracker')
 
 
-    def update(self):
-        (success, box) = self.tracker.update( self.frame ) 
-        if success:
-            msg = pickle.dumps( box )
+    def update(self, msg):
+        self.frame = msg[1]
+        newBox = self.tracker.update( self.frame ) 
+        msg = pickle.dumps( newBox )
         print ('update')
 
-server = serverTracker('127.0.0.1')
+ip = '127.0.0.1'
+print ('Starting ServerTracker at: ' + ip)
+server = ServerTracker( ip )

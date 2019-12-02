@@ -44,7 +44,7 @@ class ClientTracker:
         self.socket.send( msg )
         #recv = self.socket.recv( self.buffsize )
 
-        thread = threading.Thread( target=ClientTracker.update )
+        thread = threading.Thread( target=self.update )
         thread.start()
 
     def update(self):
@@ -55,13 +55,13 @@ class ClientTracker:
         #camera.setResolution(client, resolution)
 
         while True:
-            img = camera.getImageRemote(client, resolution)
+            img = self.camera.getImageRemote(client)
             img_width  = img[0]
             img_height = img[1]
             array      = img[6]
 
             img_data  = np.fromstring( array, np.uint8 ).reshape( img_height, img_width, 3)
-            data = pickle.dumps(("update",img_data, bounding_box)) 
+            data = pickle.dumps( ("update",img_data) )
             self.socket.send( data )
 
             recv = self.socket.recv( self.buffsize )

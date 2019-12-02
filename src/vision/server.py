@@ -51,4 +51,4 @@ class Server:
             print('sending data')
             client.send(ret)
 
-        
+s = Server('127.0.0.1') 
