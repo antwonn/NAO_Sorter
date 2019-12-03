@@ -214,15 +214,17 @@ def trackEnd():
             localState  = SEARCH_STATES.INIT
             return GLOBAL_STATES.INCOMPLETE
 
-        #tts.say("Found " + str( len(objects) ) + " objects.")
-        print objects
+        tts.say("Found " + str( len(objects) ) + " objects.")
+        #print objects
         sortedObjects = sortObjects( objects )
+        #print '\n\n\n\n'
+        #sortedObjects = reversed( sorted( lambda x: x[3], objects ) )
         print sortedObjects
 
         cubes = countObjects( sortedObjects, "cube" )
         balls = countObjects( sortedObjects, "ball" )
-        #tts.say("There are " + str(cubes) + " cubes.")
-        #tts.say("There are " + str(balls) + " balls.")
+        tts.say("There are " + str(cubes) + " cubes.")
+        tts.say("There are " + str(balls) + " balls.")
 
         box = sortedObjects[0,2:]
         box = box.astype(float)
@@ -238,7 +240,8 @@ def trackEnd():
     elif localState == TRACK_STATES.ADJUST:
         #print localState
         while True:
-            a = 1
+            x = 1
+            #print tracker.getBox()
         return GLOBAL_STATES.INCOMPLETE
     elif localState == TRACK_STATES.TOWARD:
         print localState
@@ -332,7 +335,8 @@ def findObjects():
 def sortObjects( objects ):
     array = np.array( objects )
     array = array[ array[:,3].argsort() ]
-    return array[-1:,:]
+    print array
+    return array[::-1]
 
 def countObjects( array, target ):
     return np.count_nonzero( array == target )

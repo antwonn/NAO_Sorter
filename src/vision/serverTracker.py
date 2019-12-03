@@ -34,20 +34,22 @@ class ServerTracker:
                 recv += self.client.recv(self.buffsize)
             msg  = pickle.loads( recv, encoding='bytes')
             s = str(msg[0], self.encoding)
-            self.DISPATCHER[s]( msg )
-            #Return Message
+            ret = pickle.dumps(self.DISPATCHER[s]( msg ), protocol=2)
+            self.client.send(ret)
+
 
     def start(self, msg):
         self.tracker = cv2.TrackerCSRT_create()
         self.tracker.init( msg[1], msg[2] ) 
-        print ('started tracker')
+        return 'started tracker'
 
 
     def update(self, msg):
         self.frame = msg[1]
-        newBox = self.tracker.update( self.frame ) 
-        msg = pickle.dumps( newBox )
-        print ('update')
+        msg = self.tracker.update( self.frame )
+        print (msg)
+        return msg
+
 
 ip = '127.0.0.1'
 print ('Starting ServerTracker at: ' + ip)

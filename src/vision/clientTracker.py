@@ -42,7 +42,7 @@ class ClientTracker:
 
         msg = pickle.dumps( ('start', img_data, bounding_box ) )
         self.socket.send( msg )
-        #recv = self.socket.recv( self.buffsize )
+        recv = self.socket.recv( self.buffsize )
 
         thread = threading.Thread( target=self.update )
         thread.start()
@@ -65,7 +65,22 @@ class ClientTracker:
             self.socket.send( data )
 
             recv = self.socket.recv( self.buffsize )
-            print pickle.loads( recv )
+            while len(recv) % self.buffsize == 0:
+                recv += self.client.recv(self.buffsize)
+            
+
+            #updated_box = pickle.loads( recv )
+            #print updated_box
+            success, bounding_box =  pickle.loads( recv )
+            print success, bounding_box
+
+            if success:
+                old_box = self.box.get()
+                self.box.put( bounding_box )
+                self.box.task_done()
+
+            #TODO: else return null for not found
+
 
 
             
@@ -76,13 +91,13 @@ class ClientTracker:
         self.track = False
 
     def getBox(self):
-        if this.box.empty():
+        if self.box.empty():
             return None
         else:
-            item = this.box.get() #grab from queue
-            return_this = item    #set box to item in queue
-            this.box.put(item)    #return box to queue
-            box.task_done()
-            return return_this
+            item = self.box.get() #grab from queue
+            ret = item    #set box to item in queue
+            self.box.put(item)    #return box to queue
+            self.box.task_done()
+            return ret
              
 
