@@ -1,70 +1,119 @@
 import naoqi
 import time
-import almath
+import almath, math
+import argparse
 from naoqi import ALProxy
 from math import pi, degrees, radians
 from sys import argv
 import sys
+from pick_up_position import bend_down
 
 class RightHandControl:
+	
 	#Initialize the angle variable for armjoints
-	def __init__(self, nameList, IP="127.0.0.1", port=9559):
+	def __init__(self, IP="127.0.0.1", port=9559):
 		motion = ALProxy("ALMotion", IP, port)
 		posture= ALProxy("ALRobotPosture", IP, port)
-		self.RHandAngle = degrees(motion.getAngles(nameList[0], True)[0])
-		self.RWristYawAngle = degrees(motion.getAngles(nameList[1], True)[0])
-		self.RElbowRollAngle = degrees(motion.getAngles(nameList[2], True)[0])
-		self.RElbowYawAngle = degrees(motion.getAngles(nameList[3], True)[0])
-		self.RShoulderRollAngle = degrees(motion.getAngles(nameList[4], True)[0])
-		self.RShoulderPitchAngle = degrees(motion.getAngles(nameList[5], True)[0])
+		self.nameList  = ["RHand", "RWristYaw", "RElbowRoll", "RElbowYaw",\
+					"RShoulderRoll","RShoulderPitch"]
+	
+		self.RHandAngle = degrees(motion.getAngles(self.nameList[0], True)[0] )
+		self.RWristYawAngle = degrees(motion.getAngles(self.nameList[1], True)[0] )
+		self.RElbowRollAngle = degrees(motion.getAngles(self.nameList[2], True)[0] )
+		self.RElbowYawAngle = degrees(motion.getAngles(self.nameList[3], True)[0] )
+		self.RShoulderRollAngle = degrees(motion.getAngles(self.nameList[4], True)[0] )
+		self.RShoulderPitchAngle = degrees(motion.getAngles(self.nameList[5], True)[0] )
 		
 		self.RHandTime = 0
-		self.RWristYawTime = 0
-		self.RElbowRollTime = 0
-		self.RElbowYawTime = 0
-		self.RShoulderRollTime = 0
-		self.RShoulderPitchTime = 0
+		self.RWristYawTime = 1
+		self.RElbowRollTime = 2
+		self.RElbowYawTime = 3
+		self.RShoulderRollTime = 3
+		self.RShoulderPitchTime = 5
 		
-		nameList  = ['RHand', 'RWristYaw', 'RElbowRoll', 'RElbowYaw',\
-					'RShoulderRoll','RShoulderPitch']		
-		angleList = [self.RHandAngle, self.RWristYawAngle,self.RElbowRollAngle,\
-					self.RElbowYawAngle,self.RShoulderRollAngle, self.RShoulderPitchAngle]
-		timeList  = [self.RHandTime, self.RWristYawTime, self.RElbowRollTime,\
-					self.RElbowYawTime, self.RShoulderRollTime, self.RShoulderPitchTime]
+			
+		self.angleList = [self.RHandAngle, self.RWristYawAngle,self.RElbowRollAngle,\
+			self.RElbowYawAngle,self.RShoulderRollAngle, self.RShoulderPitchAngle]
+		self.timeList  = [self.RHandTime, self.RWristYawTime, self.RElbowRollTime,\
+			self.RElbowYawTime, self.RShoulderRollTime, self.RShoulderPitchTime]
 		
-		
-	def moveRHand(nameList, angleList, timeList):
-		#Right Arms joints
-		RHand = self.RHandAngle	    					#open(1) or close(0) only
-		RWristYaw = degrees(self.RWristYawAngle)    		#degree RWristYaw: -104.5 to 104.5
-		RElbowRoll = degrees(self.RElbowRollAngle)  		#degree RElbowRoll: 2 to 88.5
-		RElbowYaw = degree(self.RElbowYawAngle)     		#degree RElbowYaw: -119.5 to 119.5
-		RShoulderRoll = degree(self.RShoulderRollAngle)	#degree RShoulderRoll = -76 to 18
-		RShoulderPitch = degree(self.RShoulderPitchAngle)#degree RShoulderPitch = -119.5 to 119.5
 
-		motion.angleInterpolation(nameList, angleList, timeList, True)
-	
-	def printRHandAngles(nameList):
+	def setAngleList(self):
+		self.angleList = [self.RHandAngle, self.RWristYawAngle,self.RElbowRollAngle,\
+			self.RElbowYawAngle,self.RShoulderRollAngle, self.RShoulderPitchAngle]
+		
+		return self.angleList
+
+	def moveRHand(self, setAngleList, timeList):
+		# Convert Angle from degrees to radians
+		angles = []
+		for i in setAngleList:
+			angles.append(math.radians(i))
+		
+		# Move the Right hand
+		motion.angleInterpolation(self.nameList, angles, timeList, True)
+		time.sleep(1.0)
+
+	def printRHandAngles(self):
 		# Print the current right arms joint angles
-		for name in nameList:
-			print(name + ": " + str(degree(motion.getAngles(name, True)[0])))		
+		for name in self.nameList:
+			print(name + ": " + str(degrees(motion.getAngles(name, True)[0])))	
+	
+	def printAngleList(self):
+		print("Angles :     " , self.angleList)
+
+	def printNameAndAngle(self):
+		for i in range(len(self.nameList)):
+			print(self.nameList[i] + ": " + str(self.angleList[i]))	
+		
+	 
 					
 if __name__ == '__main__':
 	IP = "127.0.0.1"
 	port = 9559
-	print("------------START--------------")
+
+	print("------------START--------------\n\n")
 	motion = ALProxy("ALMotion", IP, port)
 	posture = ALProxy("ALRobotPosture", IP, port)
-	print("------------CALLING--------------")
-	nameList  = ['RHand', 'RWristYaw', 'RElbowRoll', 'RElbowYaw', 'RShoulderRoll','RShoulderPitch']		
-	#angleList = [RHandAngle, RWristYawAngle,RElbowRollAngle,RElbowYawAngle,RShoulderRollAngle, RShoulderPitchAngle]
-	timeList = [1,3,3,3,3,3]
+	motion.wakeUp() 			# Wakes up the robot
+	#posture.goToPosture("Stand", .7)	# Make it stand up
+	bend_down(motion) 			# go to pick up position
+	time.sleep(3.0)
+	print("------------CALLING--------------\n\n")
 	
-	angleList = []
-	for name in nameList:
-		angleList.append(degrees(motion.getAngles(name, True)[0]))
-	print("angleList: ", angleList)
+	print("Current position-----------")
+	go = RightHandControl(IP, port)
+	go.printAngleList()    			#print out all Angle
 	
-	go = RightHandControl(nameList, IP, port)
-	go.moveRHand(nameList, angleList, timeList)
-	print("-------------DONE-------------")
+	print("After changing Angle--------")
+	go.RElbowRoll = 88.5
+	go.RElbowYaw = 48.0960816068
+	timeList = [1,2,3,4,5,6]
+	setAngleList = go.setAngleList()
+	print("setAngleList: ------" , setAngleList)
+
+	go.moveRHand(setAngleList, timeList)
+	go.printAngleList()    #print out all Angle
+	
+
+
+
+
+
+
+
+
+	'''
+	# DO NOT DELETE ( hand control)
+	setAngleList = [1, 104.5, 88.5, 119.5, 18, 119]	   #in degrees
+	'''
+	
+	
+	print("------------DONE--------------/n")
+
+
+
+
+
+
+

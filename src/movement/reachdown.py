@@ -3,9 +3,9 @@ from math import pi, degrees, radians
 from sys import argv
 import time
 
-ip_addr = argv[1]
+ip_addr = "127.0.0.1"
 
-port = int(argv[2])
+port = 9559
 
 hipPitchAngle       = radians(-84)
 kneePitchAngle      = radians(45)
