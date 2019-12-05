@@ -10,15 +10,22 @@ from vision import client as cl
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
 SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
-TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST MOVE_TOWARD')
+TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST CENTER MOVE_TOWARD')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
+
+RESOLUTIONS = { 0:(160,120),
+                1:(320,240),
+                2:(640, 480),
+                3:(1280,960) 
+              }
 
 globalState = GLOBAL_STATES.SEARCH
 localState  = SEARCH_STATES.INIT
 motion      = None
 posture     = None
 camera      = None
+resolution  = RESOLUTIONS[2]
 tts         = None
 tracker     = None
 client      = None
@@ -43,6 +50,7 @@ def main(ip, port = 9559):
 
     try:
         posture = ALProxy("ALRobotPosture", ip, port)
+        #posture.goToPosture("StandInit", 0.5)
     except Exception, e:
         print "Error connecting to ALRobotPosture"
         print "Error: ", e
@@ -104,11 +112,9 @@ def stateMachineEnd():
         #TODO: INIT STATE 
         print globalState
     elif globalState == GLOBAL_STATES.SEARCH:
-        #TODO: SEARCH STATE
         searchEnd()
         print globalState
     elif globalState == GLOBAL_STATES.TRACK:
-        #TODO: TRACH STATE
         if trackEnd() == GLOBAL_STATES.COMPLETED:
             globalState = GLOBAL_STATES.PICKUP
             localState  = PICKUP_STATES.INIT
@@ -188,7 +194,6 @@ def trackStart():
         #initiate thread that is updating the box continuously
         #if bounding box is null then go back to search
         print localState
-        print objects
     elif localState == TRACK_STATES.ADJUST:
         #print localState
         return
@@ -225,6 +230,7 @@ def trackEnd():
         balls = countObjects( sortedObjects, "ball" )
         tts.say("There are " + str(cubes) + " cubes.")
         tts.say("There are " + str(balls) + " balls.")
+        tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
 
         box = sortedObjects[0,2:]
         box = box.astype(float)
@@ -232,13 +238,19 @@ def trackEnd():
         print bounding_box
         
         tracker = ClientTracker( '127.0.0.1' )
-        print camera
+
         tracker.start( camera, bounding_box )
-        print 'TRACK_STATES.INIT'
         localState = TRACK_STATES.ADJUST
         print localState
     elif localState == TRACK_STATES.ADJUST:
         #print localState
+        state = adjust( tracker )
+        if state == GLOBAL_STATES.COMPLETED:
+            return state
+        elif state == TRACK_STATES.CENTER:
+            tts.say("Centering Object")
+            center( tracker )
+
         while True:
             x = 1
             #print tracker.getBox()
@@ -248,7 +260,38 @@ def trackEnd():
     else:
         print 'TRACK STATE END'
 
+def adjust( tracker ):
+    global resolution
+    global tts
 
+    x, y, width, height = tracker.getBox() 
+    print (x)
+    print (resolution[0]/2)
+
+    if ( abs( (resolution[0]/2) - x ) > 20 ):
+        tts.say("Object is not center.")
+        return TRACK_STATES.CENTER
+    elif False:
+        #TODO CHECK IF Y IS TOO FAR UP
+        return TRACK_STATES.MOVE_TOWARD
+
+    return GLOBAL_STATES.COMPLETED
+
+def center( tracker ):
+    global resolution
+    global tts
+    global motion
+
+    x, y, width, height = tracker.getBox()
+
+    offset = x - (resolution[0]/2)
+    if offset > 0:
+        tts.say("Object is to my right")
+    elif offset < 0:
+        tts.say("Object is to my left")
+
+    return
+    
 
 ####################### PICK UP #######################
 def pickUpStart():
