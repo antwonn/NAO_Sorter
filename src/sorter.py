@@ -251,9 +251,6 @@ def trackEnd():
             tts.say("Centering Object")
             center( tracker )
 
-        while True:
-            x = 1
-            #print tracker.getBox()
         return GLOBAL_STATES.INCOMPLETE
     elif localState == TRACK_STATES.TOWARD:
         print localState
@@ -268,7 +265,7 @@ def adjust( tracker ):
     print (x)
     print (resolution[0]/2)
 
-    if ( abs( (resolution[0]/2) - x ) > 20 ):
+    if ( abs( (resolution[0]/2) - x ) > 10 ):
         tts.say("Object is not center.")
         return TRACK_STATES.CENTER
     elif False:
@@ -287,8 +284,10 @@ def center( tracker ):
     offset = x - (resolution[0]/2)
     if offset > 0:
         tts.say("Object is to my right")
+        motion.move(0,0, -.05)
     elif offset < 0:
         tts.say("Object is to my left")
+        motion.move(0,0, .05)
 
     return
     
@@ -299,6 +298,8 @@ def pickUpStart():
     global localState
 
     if localState == PICKUP_STATES.INIT:
+        while True:
+            x = 1
         print localState
     elif localState == PICKUP_STATES.ADJUST:
         print localState

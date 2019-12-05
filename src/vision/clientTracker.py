@@ -66,7 +66,7 @@ class ClientTracker:
 
             recv = self.socket.recv( self.buffsize )
             while len(recv) % self.buffsize == 0:
-                recv += self.client.recv(self.buffsize)
+                recv += self.socket.recv(self.buffsize)
             
 
             #updated_box = pickle.loads( recv )
@@ -79,13 +79,6 @@ class ClientTracker:
                 self.box.put( bounding_box )
                 self.box.task_done()
 
-            #TODO: else return null for not found
-
-
-
-            
-            #send to server
-            #save bounding box to Queue
 
     def stop(self):
         self.track = False

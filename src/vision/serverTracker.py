@@ -40,14 +40,19 @@ class ServerTracker:
 
     def start(self, msg):
         self.tracker = cv2.TrackerCSRT_create()
-        self.tracker.init( msg[1], msg[2] ) 
+        self.frame = msg[1]
+        self.tracker.init( self.frame, msg[2] ) 
         return 'started tracker'
 
 
     def update(self, msg):
         self.frame = msg[1]
         msg = self.tracker.update( self.frame )
-        print (msg)
+        if msg[0]:
+            (x, y, w, h) = [int(v) for v in msg[1]]
+            cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        cv2.imshow("frame", self.frame)
+        key = cv2.waitkey(1) & 0xFF
         return msg
 
 
