@@ -2,6 +2,7 @@ import cv2
 import socket
 import pickle
 import numpy as np
+import time
 
 class ServerTracker:
     port     = 9001
@@ -47,12 +48,15 @@ class ServerTracker:
 
     def update(self, msg):
         self.frame = msg[1]
+        start = time.time()
         msg = self.tracker.update( self.frame )
+        totaltime   = time.time() - start
+        print (totaltime)
         if msg[0]:
             (x, y, w, h) = [int(v) for v in msg[1]]
             cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-        cv2.imshow("frame", self.frame)
-        key = cv2.waitkey(1) & 0xFF
+        cv2.imshow("serverFrame", self.frame)
+        key = cv2.waitKey(1) & 0xFF
         return msg
 
 

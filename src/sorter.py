@@ -57,8 +57,9 @@ def main(ip, port = 9559):
 
     try:
         camera = ALProxy("ALVideoDevice", ip, port)
-        for x in camera.getSubscribers():
-            camera.unsubscribe(x)
+        if camera.getSubscribers() > 1:
+            for x in camera.getSubscribers()[1:]:
+                camera.unsubscribe(x)
         videoClient = camera.subscribe('nao_sorter', 2, 13, 5)
     except Exception, e:
         print "Error connecting to ALVideoDevice"
@@ -234,17 +235,25 @@ def trackEnd():
 
         box = sortedObjects[0,2:]
         box = box.astype(float)
+        box[0] = int(box[0] - box[2]/2)
+        box[1] = int(box[1] - box[3]/2)
+        box[2] = int(box[2])
+        box[3] = int(box[3])
+
         bounding_box = tuple(box) 
         print bounding_box
         
-        tracker = ClientTracker( '127.0.0.1' )
+        tracker = ClientTracker( '127.0.0.1', camera )
 
-        tracker.start( camera, bounding_box )
+        tracker.start( bounding_box )
         localState = TRACK_STATES.ADJUST
         print localState
     elif localState == TRACK_STATES.ADJUST:
         #print localState
         state = adjust( tracker )
+        while True:
+            x = 1
+
         if state == GLOBAL_STATES.COMPLETED:
             return state
         elif state == TRACK_STATES.CENTER:
