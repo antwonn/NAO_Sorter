@@ -6,6 +6,8 @@ from movement.pick_up_position import bend_down
 from vision.clientTracker import ClientTracker
 import argparse
 import numpy as np
+import almath
+import time
 from vision import client as cl
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
@@ -40,6 +42,7 @@ def main(ip, port = 9559):
     global tts
     global camera
     global videoClient
+    global resolution
 
     try:
         motion = ALProxy("ALMotion", ip, port)
@@ -50,7 +53,15 @@ def main(ip, port = 9559):
 
     try:
         posture = ALProxy("ALRobotPosture", ip, port)
-        #posture.goToPosture("StandInit", 0.5)
+        posture.goToPosture("StandInit", 0.5)
+
+        motion.setStiffnesses("Head", 1.0)
+        headpitch = "HeadPitch"
+        targetAngle = [25.0*almath.TO_RAD]
+        targetTime  = [1.0]
+        isAbsolute  = True
+        motion.angleInterpolation(headpitch, targetAngle, targetTime, isAbsolute)
+        time.sleep(1)
     except Exception, e:
         print "Error connecting to ALRobotPosture"
         print "Error: ", e
@@ -60,7 +71,7 @@ def main(ip, port = 9559):
         if camera.getSubscribers() > 1:
             for x in camera.getSubscribers()[1:]:
                 camera.unsubscribe(x)
-        videoClient = camera.subscribe('nao_sorter', 2, 13, 5)
+        videoClient = camera.subscribe('nao_sorter', 2, 13, 30)
     except Exception, e:
         print "Error connecting to ALVideoDevice"
         print "Error: ", e
@@ -251,8 +262,6 @@ def trackEnd():
     elif localState == TRACK_STATES.ADJUST:
         #print localState
         state = adjust( tracker )
-        while True:
-            x = 1
 
         if state == GLOBAL_STATES.COMPLETED:
             return state
@@ -293,11 +302,10 @@ def center( tracker ):
     offset = x - (resolution[0]/2)
     if offset > 0:
         tts.say("Object is to my right")
-        motion.move(0,0, -.05)
+        motion.move(0,0, -.02)
     elif offset < 0:
         tts.say("Object is to my left")
-        motion.move(0,0, .05)
-
+        motion.move(0,0, .02)
     return
     
 
