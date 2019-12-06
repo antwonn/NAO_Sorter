@@ -9,6 +9,7 @@ import numpy as np
 import almath
 import time
 from vision import client as cl
+from simple_pid import PID
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
 SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
@@ -33,6 +34,9 @@ tracker     = None
 client      = None
 videoClient = None
 objects     = None
+bounding_box = None
+pid         = PID(.001, 0.0001, 0, setpoint=0)
+pid.output_limits = (-.35, .35)
 
 def main(ip, port = 9559):
     global globalState
@@ -57,7 +61,7 @@ def main(ip, port = 9559):
 
         motion.setStiffnesses("Head", 1.0)
         headpitch = "HeadPitch"
-        targetAngle = [25.0*almath.TO_RAD]
+        targetAngle = [15.0*almath.TO_RAD]
         targetTime  = [1.0]
         isAbsolute  = True
         motion.angleInterpolation(headpitch, targetAngle, targetTime, isAbsolute)
@@ -148,11 +152,13 @@ def searchStart():
     global localState
     global client
     global objects
+    global tts
 
     if localState == SEARCH_STATES.INIT:
         if not client:
             #client = cl.Client(args.ip)
             client = cl.Client('127.0.0.1')
+	tts.say("Searching")
         objects = findObjects()
         if objects:
             globalState = GLOBAL_STATES.TRACK
@@ -221,6 +227,8 @@ def trackEnd():
     global camera
     global objects
     global tts
+    global client
+    global bounding_box
 
     if localState == TRACK_STATES.INIT:
         #SORT THE LIST OF OBJECTS AND PICK ONE
@@ -231,7 +239,7 @@ def trackEnd():
             localState  = SEARCH_STATES.INIT
             return GLOBAL_STATES.INCOMPLETE
 
-        tts.say("Found " + str( len(objects) ) + " objects.")
+        #tts.say("Found " + str( len(objects) ) + " objects.")
         #print objects
         sortedObjects = sortObjects( objects )
         #print '\n\n\n\n'
@@ -240,9 +248,9 @@ def trackEnd():
 
         cubes = countObjects( sortedObjects, "cube" )
         balls = countObjects( sortedObjects, "ball" )
-        tts.say("There are " + str(cubes) + " cubes.")
-        tts.say("There are " + str(balls) + " balls.")
-        tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
+        #tts.say("There are " + str(cubes) + " cubes.")
+        #tts.say("There are " + str(balls) + " balls.")
+        #tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
 
         box = sortedObjects[0,2:]
         box = box.astype(float)
@@ -254,20 +262,22 @@ def trackEnd():
         bounding_box = tuple(box) 
         print bounding_box
         
-        tracker = ClientTracker( '127.0.0.1', camera )
+        #tracker = ClientTracker( '127.0.0.1', camera )
 
-        tracker.start( bounding_box )
+        #tracker.start( bounding_box )
         localState = TRACK_STATES.ADJUST
         print localState
     elif localState == TRACK_STATES.ADJUST:
         #print localState
-        state = adjust( tracker )
+        state = adjust( bounding_box )
 
         if state == GLOBAL_STATES.COMPLETED:
             return state
         elif state == TRACK_STATES.CENTER:
-            tts.say("Centering Object")
-            center( tracker )
+            #tts.say("Centering Object")
+            center( bounding_box )
+	    globalState = GLOBAL_STATES.SEARCH
+	    localState  = SEARCH_STATES.INIT
 
         return GLOBAL_STATES.INCOMPLETE
     elif localState == TRACK_STATES.TOWARD:
@@ -275,16 +285,16 @@ def trackEnd():
     else:
         print 'TRACK STATE END'
 
-def adjust( tracker ):
+def adjust( box ):
     global resolution
     global tts
 
-    x, y, width, height = tracker.getBox() 
+    x, y, width, height = box 
     print (x)
     print (resolution[0]/2)
 
     if ( abs( (resolution[0]/2) - x ) > 10 ):
-        tts.say("Object is not center.")
+        #tts.say("Object is not center.")
         return TRACK_STATES.CENTER
     elif False:
         #TODO CHECK IF Y IS TOO FAR UP
@@ -292,20 +302,25 @@ def adjust( tracker ):
 
     return GLOBAL_STATES.COMPLETED
 
-def center( tracker ):
+def center( box ):
     global resolution
     global tts
     global motion
+    global pid
 
-    x, y, width, height = tracker.getBox()
+    x, y, width, height = box
 
     offset = x - (resolution[0]/2)
     if offset > 0:
-        tts.say("Object is to my right")
-        motion.move(0,0, -.02)
+        #tts.say("Object is to my right")
+	out = pid(offset)
+	print out
+        motion.moveTo(0,0, out)
     elif offset < 0:
-        tts.say("Object is to my left")
-        motion.move(0,0, .02)
+        #tts.say("Object is to my left")
+	out = pid(offset)
+	print out
+        motion.moveTo(0,0, out)
     return
     
 
