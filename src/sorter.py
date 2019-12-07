@@ -12,7 +12,7 @@ from vision import client as cl
 from simple_pid import PID
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
-SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
+SEARCH_STATES = Enum('SearchStates', 'INIT MOVE SCAN')
 TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST CENTER MOVE_TOWARD')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
@@ -88,6 +88,8 @@ def main(ip, port = 9559):
 
     #movement = Movement(ip, port)
     print( globalState )
+    tts.say("Hi! My name is Paquito.")
+    tts.say("This is the nao sorter.")
 
     while True:
         stateMachineStart()
@@ -125,11 +127,13 @@ def stateMachineEnd():
     global localState
 
     if globalState == GLOBAL_STATES.INIT:
-        #TODO: INIT STATE 
+        #TODO: INIT STATE
+        #      MAKE AN ANIMATION WITH THE ROBOT
         print globalState
     elif globalState == GLOBAL_STATES.SEARCH:
-        searchEnd()
-        print globalState
+        if searchEnd() == GLOBAL_STATES.COMPLETED:
+            globalState = GLOBAL_STATES.TRACK
+            localState  = PICKUP_STATES.INIT
     elif globalState == GLOBAL_STATES.TRACK:
         if trackEnd() == GLOBAL_STATES.COMPLETED:
             globalState = GLOBAL_STATES.PICKUP
@@ -146,7 +150,7 @@ def stateMachineEnd():
         print 'STATE NOT APPLICABLE'
     
 ####################### SEARCH ########################
-#SEARCH_STATES = Enum('SearchStates', 'INIT MOVE HEAD_SCAN')
+#SEARCH_STATES = Enum('SearchStates', 'INIT MOVE SCAN')
 def searchStart():
     global globalState
     global localState
@@ -155,22 +159,13 @@ def searchStart():
     global tts
 
     if localState == SEARCH_STATES.INIT:
-        if not client:
-            #client = cl.Client(args.ip)
-            client = cl.Client('127.0.0.1')
-	tts.say("Searching")
-        objects = findObjects()
-        if objects:
-            globalState = GLOBAL_STATES.TRACK
-            localState = TRACK_STATES.INIT
-        else:
-            localState = SEARCH_STATES.HEAD_SCAN
-            
+        return
+    elif localState == SEACH_STATES.SCAN:  
+        return
     elif localState == SEARCH_STATES.MOVE:
         #MOVE TO OBJECT
         print localState
-
-    elif localState == SEARCH_STATES.HEAD_SCAN:
+    elif localState == SEARCH_STATES.SCAN:
         #MOVE HEAD
         # IF STRAIGHT LOOK LEFT
         # IF LEFT LOOK RIGHT
@@ -183,14 +178,24 @@ def searchStart():
 def searchEnd():
     global globalState
     global localState
+    global client
+    global objects 
+
     if localState == SEARCH_STATES.INIT:
-        #START THREAD LOOKING FOR OBJECTS
-        print localState
+	tts.say("Initializing Search")
+        if not client:
+            client = cl.Client('127.0.0.1')
+        objects = findObjects()
+        if objects:
+            return GLOBAL_STATES.COMPLETED
+        else:
+            localState = SEARCH_STATES.SCAN
+            return GLOBAL_STATES.INCOMPLETE
     elif localState == SEARCH_STATES.MOVE:
         #CHECK IF DETECTED
         #IF YES: CHANGE STATE TO TRACK
         print localState
-    elif localState == SEARCH_STATES.HEAD_SCAN:
+    elif localState == SEARCH_STATES.SCAN:
         objects = findObjects()
         if objects:
             globalState = GLOBAL_STATES.TRACK
@@ -263,7 +268,6 @@ def trackEnd():
         print bounding_box
         
         #tracker = ClientTracker( '127.0.0.1', camera )
-
         #tracker.start( bounding_box )
         localState = TRACK_STATES.ADJUST
         print localState
@@ -274,14 +278,14 @@ def trackEnd():
         if state == GLOBAL_STATES.COMPLETED:
             return state
         elif state == TRACK_STATES.CENTER:
-            #tts.say("Centering Object")
             center( bounding_box )
 	    globalState = GLOBAL_STATES.SEARCH
-	    localState  = SEARCH_STATES.INIT
-
+	    localState  = SEARCH_STATES.SCAN
+        elif state == TRACK_STATES.MOVE_TOWARD
+            moveTowards( bounding_box )
+	    globalState = GLOBAL_STATES.SEARCH
+	    localState  = SEARCH_STATES.SCAN
         return GLOBAL_STATES.INCOMPLETE
-    elif localState == TRACK_STATES.TOWARD:
-        print localState
     else:
         print 'TRACK STATE END'
 
@@ -294,11 +298,16 @@ def adjust( box ):
     print (resolution[0]/2)
 
     if ( abs( (resolution[0]/2) - x ) > 10 ):
-        #tts.say("Object is not center.")
+        tts.say("Object is not center.")
         return TRACK_STATES.CENTER
-    elif False:
-        #TODO CHECK IF Y IS TOO FAR UP
+    else:
+        tts.say("Object is center.")
+
+    if ( (resolution[1] - y) > 50 ):
+        tts.say("Moving closer to object.")
         return TRACK_STATES.MOVE_TOWARD
+
+    #TODO: CHECK ANGLE OF NAO HEAD TO SEE IF IT'S THE MOST IT CAN GO
 
     return GLOBAL_STATES.COMPLETED
 
@@ -322,6 +331,8 @@ def center( box ):
 	print out
         motion.moveTo(0,0, out)
     return
+
+def moveToward( box ):
     
 
 ####################### PICK UP #######################
