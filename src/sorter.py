@@ -28,6 +28,8 @@ localState  = SEARCH_STATES.INIT
 motion      = None
 posture     = None
 camera      = None
+cameraID    = 'nao_sorter'
+cameraIndex = 0
 resolution  = RESOLUTIONS[2]
 tts         = None
 tracker     = None
@@ -45,6 +47,8 @@ def main(ip, port = 9559):
     global posture
     global tts
     global camera
+    global cameraID
+    global cameraIndex
     global videoClient
     global resolution
 
@@ -75,7 +79,7 @@ def main(ip, port = 9559):
         if camera.getSubscribers() > 1:
             for x in camera.getSubscribers()[1:]:
                 camera.unsubscribe(x)
-        videoClient = camera.subscribe('nao_sorter', 2, 13, 30)
+        videoClient = camera.subscribeCamera(cameraID, cameraIndex, 2, 13, 30)
     except Exception, e:
         print "Error connecting to ALVideoDevice"
         print "Error: ", e
@@ -212,16 +216,16 @@ def trackStart():
     global tracker
     global camera
     global objects
+    global bounding_box
 
     if localState == TRACK_STATES.INIT:
-        #initiate thread that is updating the box continuously
-        #if bounding box is null then go back to search
-        print localState
-    elif localState == TRACK_STATES.ADJUST:
-        #print localState
         return
-    elif localState == TRACK_STATES.TOWARD:
-        print localState
+    elif localState == TRACK_STATES.ADJUST:
+        return
+    elif localState == TRACK_STATES.CENTER:
+        center( bounding_box )
+    elif localState == TRACK_STATES.MOVE_TOWARD:
+        moveTowards( bounding_box )
     else:
         print 'TRACK STATE START'
 
@@ -244,18 +248,15 @@ def trackEnd():
             localState  = SEARCH_STATES.INIT
             return GLOBAL_STATES.INCOMPLETE
 
-        #tts.say("Found " + str( len(objects) ) + " objects.")
-        #print objects
-        sortedObjects = sortObjects( objects )
-        #print '\n\n\n\n'
-        #sortedObjects = reversed( sorted( lambda x: x[3], objects ) )
-        print sortedObjects
+        tts.say("Found " + str( len(objects) ) + " objects.")
 
+        sortedObjects = sortObjects( objects )
         cubes = countObjects( sortedObjects, "cube" )
         balls = countObjects( sortedObjects, "ball" )
-        #tts.say("There are " + str(cubes) + " cubes.")
-        #tts.say("There are " + str(balls) + " balls.")
-        #tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
+
+        tts.say("There are " + str(cubes) + " cubes.")
+        tts.say("There are " + str(balls) + " balls.")
+        tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
 
         box = sortedObjects[0,2:]
         box = box.astype(float)
@@ -270,24 +271,22 @@ def trackEnd():
         #tracker = ClientTracker( '127.0.0.1', camera )
         #tracker.start( bounding_box )
         localState = TRACK_STATES.ADJUST
-        print localState
+        return GLOBAL_STATES.INCOMPLETE
     elif localState == TRACK_STATES.ADJUST:
         #print localState
         state = adjust( bounding_box )
 
         if state == GLOBAL_STATES.COMPLETED:
             return state
-        elif state == TRACK_STATES.CENTER:
-            center( bounding_box )
-	    globalState = GLOBAL_STATES.SEARCH
-	    localState  = SEARCH_STATES.SCAN
-        elif state == TRACK_STATES.MOVE_TOWARD
-            moveTowards( bounding_box )
-	    globalState = GLOBAL_STATES.SEARCH
-	    localState  = SEARCH_STATES.SCAN
-        return GLOBAL_STATES.INCOMPLETE
-    else:
-        print 'TRACK STATE END'
+        else:
+            localState = state
+            return GLOBAL_STATES.INCOMPLETE
+    elif localState == TRACK_STATES.CENTER:
+        globalState = GLOBAL_STATES.SEARCH
+        localState  = localState.SCAN
+    elif localState == TRACK_STATES.MOVE_TOWARD:
+        globalState = GLOBAL_STATES.SEARCH
+        localState  = localState.SCAN
 
 def adjust( box ):
     global resolution
