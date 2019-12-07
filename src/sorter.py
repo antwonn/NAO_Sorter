@@ -17,6 +17,7 @@ TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST CENTER MOVE_TOWARD')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
 
+resolutionIndex = 3
 RESOLUTIONS = { 0:(160,120),
                 1:(320,240),
                 2:(640, 480),
@@ -30,15 +31,17 @@ posture     = None
 camera      = None
 cameraID    = 'nao_sorter'
 cameraIndex = 0
-resolution  = RESOLUTIONS[2]
+resolution  = RESOLUTIONS[resolutionIndex]
 tts         = None
 tracker     = None
 client      = None
 videoClient = None
 objects     = None
 bounding_box = None
-pid         = PID(.001, 0.0001, 0, setpoint=0)
-pid.output_limits = (-.35, .35)
+#centerPid         = PID(.001, 0.0001, 0, setpoint=0)
+centerPid         = PID(.0003, 0.00005, 0, setpoint=0)
+centerPid.output_limits = (-.35, .35)
+walkPid     = PID(.00002, 0.000002, 0, setpoint=resolution[1]-100)
 
 def main(ip, port = 9559):
     global globalState
@@ -51,6 +54,7 @@ def main(ip, port = 9559):
     global cameraIndex
     global videoClient
     global resolution
+    global resolutionIndex
 
     try:
         motion = ALProxy("ALMotion", ip, port)
@@ -79,7 +83,7 @@ def main(ip, port = 9559):
         if camera.getSubscribers() > 1:
             for x in camera.getSubscribers()[1:]:
                 camera.unsubscribe(x)
-        videoClient = camera.subscribeCamera(cameraID, cameraIndex, 2, 13, 30)
+        videoClient = camera.subscribeCamera(cameraID, cameraIndex, resolutionIndex, 13, 30)
     except Exception, e:
         print "Error connecting to ALVideoDevice"
         print "Error: ", e
@@ -137,7 +141,7 @@ def stateMachineEnd():
     elif globalState == GLOBAL_STATES.SEARCH:
         if searchEnd() == GLOBAL_STATES.COMPLETED:
             globalState = GLOBAL_STATES.TRACK
-            localState  = PICKUP_STATES.INIT
+            localState  = TRACK_STATES.INIT
     elif globalState == GLOBAL_STATES.TRACK:
         if trackEnd() == GLOBAL_STATES.COMPLETED:
             globalState = GLOBAL_STATES.PICKUP
@@ -164,7 +168,7 @@ def searchStart():
 
     if localState == SEARCH_STATES.INIT:
         return
-    elif localState == SEACH_STATES.SCAN:  
+    elif localState == SEARCH_STATES.SCAN:  
         return
     elif localState == SEARCH_STATES.MOVE:
         #MOVE TO OBJECT
@@ -186,7 +190,7 @@ def searchEnd():
     global objects 
 
     if localState == SEARCH_STATES.INIT:
-	tts.say("Initializing Search")
+	#tts.say("Initializing Search")
         if not client:
             client = cl.Client('127.0.0.1')
         objects = findObjects()
@@ -225,7 +229,7 @@ def trackStart():
     elif localState == TRACK_STATES.CENTER:
         center( bounding_box )
     elif localState == TRACK_STATES.MOVE_TOWARD:
-        moveTowards( bounding_box )
+        moveToward( bounding_box )
     else:
         print 'TRACK STATE START'
 
@@ -248,15 +252,15 @@ def trackEnd():
             localState  = SEARCH_STATES.INIT
             return GLOBAL_STATES.INCOMPLETE
 
-        tts.say("Found " + str( len(objects) ) + " objects.")
+        #tts.say("Found " + str( len(objects) ) + " objects.")
 
         sortedObjects = sortObjects( objects )
         cubes = countObjects( sortedObjects, "cube" )
         balls = countObjects( sortedObjects, "ball" )
 
-        tts.say("There are " + str(cubes) + " cubes.")
-        tts.say("There are " + str(balls) + " balls.")
-        tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
+        #tts.say("There are " + str(cubes) + " cubes.")
+        #tts.say("There are " + str(balls) + " balls.")
+        #tts.say("Tracking the closest object. It is a " + str(sortedObjects[0,0]))
 
         box = sortedObjects[0,2:]
         box = box.astype(float)
@@ -283,10 +287,10 @@ def trackEnd():
             return GLOBAL_STATES.INCOMPLETE
     elif localState == TRACK_STATES.CENTER:
         globalState = GLOBAL_STATES.SEARCH
-        localState  = localState.SCAN
+        localState  = SEARCH_STATES.SCAN
     elif localState == TRACK_STATES.MOVE_TOWARD:
         globalState = GLOBAL_STATES.SEARCH
-        localState  = localState.SCAN
+        localState  = SEARCH_STATES.SCAN
 
 def adjust( box ):
     global resolution
@@ -296,13 +300,13 @@ def adjust( box ):
     print (x)
     print (resolution[0]/2)
 
-    if ( abs( (resolution[0]/2) - x ) > 10 ):
-        tts.say("Object is not center.")
+    if ( abs( (resolution[0]/2) - x ) > 50 ):
+        #tts.say("Object is not center.")
         return TRACK_STATES.CENTER
     else:
         tts.say("Object is center.")
 
-    if ( (resolution[1] - y) > 50 ):
+    if ( ((resolution[1]-50) - y) > 100 ):
         tts.say("Moving closer to object.")
         return TRACK_STATES.MOVE_TOWARD
 
@@ -314,24 +318,28 @@ def center( box ):
     global resolution
     global tts
     global motion
-    global pid
+    global centerPid
 
     x, y, width, height = box
 
     offset = x - (resolution[0]/2)
     if offset > 0:
         #tts.say("Object is to my right")
-	out = pid(offset)
+	out = centerPid(offset)
 	print out
         motion.moveTo(0,0, out)
     elif offset < 0:
         #tts.say("Object is to my left")
-	out = pid(offset)
+	out = centerPid(offset)
 	print out
         motion.moveTo(0,0, out)
     return
 
 def moveToward( box ):
+   _, y, _, _ = box
+   out = walkPid(y)
+   print "OutToward: " + str(out)
+   motion.moveTo(out, 0, 0)
     
 
 ####################### PICK UP #######################
