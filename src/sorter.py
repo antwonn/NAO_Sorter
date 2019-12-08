@@ -13,7 +13,7 @@ from simple_pid import PID
 
 GLOBAL_STATES = Enum('GlobalStates', 'INIT SEARCH TRACK PICKUP RETURN COMPLETED INCOMPLETE')
 SEARCH_STATES = Enum('SearchStates', 'INIT MOVE SCAN')
-TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST CENTER MOVE_TOWARD')
+TRACK_STATES  = Enum('TrackStates',  'INIT ADJUST CENTER MOVE_TOWARD SWITCH_CAMERA')
 PICKUP_STATES = Enum('PickUpStates', 'INIT ADJUST BEND_DOWN PID GRAB STAND_UP') 
 RETURN_STATES = Enum('ReturnStates', 'INIT GO_HOME SCAN SEARCH_HOME DROP')
 
@@ -38,10 +38,11 @@ client      = None
 videoClient = None
 objects     = None
 bounding_box = None
+error       = 100
 #centerPid         = PID(.001, 0.0001, 0, setpoint=0)
 centerPid         = PID(.0003, 0.00005, 0, setpoint=0)
 centerPid.output_limits = (-.35, .35)
-walkPid     = PID(.00002, 0.000002, 0, setpoint=resolution[1]-100)
+walkPid     = PID(.00002, 0.000004, 0, setpoint=resolution[1]-100)
 
 def main(ip, port = 9559):
     global globalState
@@ -145,7 +146,7 @@ def stateMachineEnd():
     elif globalState == GLOBAL_STATES.TRACK:
         if trackEnd() == GLOBAL_STATES.COMPLETED:
             globalState = GLOBAL_STATES.PICKUP
-            localState  = PICKUP_STATES.INIT
+            localState  = PICKUP_STATES.BEND_DOWN
         print globalState
     elif globalState == GLOBAL_STATES.PICKUP:
         if pickUpEnd() == GLOBAL_STATES.COMPLETED: 
@@ -291,10 +292,15 @@ def trackEnd():
     elif localState == TRACK_STATES.MOVE_TOWARD:
         globalState = GLOBAL_STATES.SEARCH
         localState  = SEARCH_STATES.SCAN
+    elif localState == TRACK_STATES.SWITCH_CAMERA:
+    	switchCamera()
+	globalState = GLOBAL_STATES.SEARCH
+        localState  = SEARCH_STATES.SCAN
 
 def adjust( box ):
     global resolution
     global tts
+    global error
 
     x, y, width, height = box 
     print (x)
@@ -306,13 +312,29 @@ def adjust( box ):
     else:
         tts.say("Object is center.")
 
-    if ( ((resolution[1]-50) - y) > 100 ):
-        tts.say("Moving closer to object.")
-        return TRACK_STATES.MOVE_TOWARD
+    if cameraIndex == 0:
+        if ( ((resolution[1]-50) - y) > error ):
+	    tts.say("Camera 1: moving closer to object.")
+	    return TRACK_STATES.MOVE_TOWARD
+        else:
+	    return TRACK_STATES.SWITCH_CAMERA
+    else:
+        print 'Resolution, y, error'
+        print resolution[1]/2
+	print y
+	print error
+        if ( (resolution[1]/5*3) - y > error ):
+	    tts.say("Camera 2: moving closer to object.")
+	    return TRACK_STATES.MOVE_TOWARD
+        else:
+            tts.say("Object is in position for pickup.")	
+	    return GLOBAL_STATES.COMPLETED
+  
 
+    tts.say("W.T.F")
     #TODO: CHECK ANGLE OF NAO HEAD TO SEE IF IT'S THE MOST IT CAN GO
 
-    return GLOBAL_STATES.COMPLETED
+    #return GLOBAL_STATES.COMPLETED
 
 def center( box ):
     global resolution
@@ -340,21 +362,43 @@ def moveToward( box ):
    out = walkPid(y)
    print "OutToward: " + str(out)
    motion.moveTo(out, 0, 0)
+
+def switchCamera():
+   global videoClient
+   global cameraIndex
+   global walkPid
+   global error
+
+   if camera.getSubscribers() > 1:
+     for x in camera.getSubscribers()[1:]:
+       camera.unsubscribe(x)
+
+   if cameraIndex == 0:
+     walkPid     = PID(.00002, 0.000004, 0, setpoint=(resolution[1]/5)*3)
+     cameraIndex = 1
+   else:
+     walkPid     = PID(.00002, 0.000004, 0, setpoint=resolution[1]-100)
+     cameraIndex = 0
+
+   videoClient = camera.subscribeCamera(cameraID, cameraIndex, resolutionIndex, 13, 30)
+    
     
 
 ####################### PICK UP #######################
 def pickUpStart():
     global motion
     global localState
+    global tts
+    global posture
 
     if localState == PICKUP_STATES.INIT:
-        while True:
-            x = 1
         print localState
     elif localState == PICKUP_STATES.ADJUST:
         print localState
     elif localState == PICKUP_STATES.BEND_DOWN:
-        print localState
+        tts.say("Picking up object.")
+        posture.goToPosture("StandInit", 0.5)
+	time.sleep(0.5)
         bend_down( motion )     
     elif localState == PICKUP_STATES.PID:
         #Truc:Adjust right hand to decrease error.
@@ -375,6 +419,8 @@ def pickUpEnd():
         print localState
     elif localState == PICKUP_STATES.BEND_DOWN:
         print localState
+	while True:
+	  x = 1
     elif localState == PICKUP_STATES.PID:
         #Truc:Check if error is zero.
         print localState
